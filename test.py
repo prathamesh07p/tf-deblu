@@ -33,4 +33,4 @@ with tf.Session() as sess:
     out=out[0]
     out=im2uint8(out)
     out=cv2.cvtColor(out,cv2.COLOR_RGB2BGR)
-    cv2.imwrite('example_deblur.png',out)
+    cv2.imwrite('eg_deblur.png',out)
