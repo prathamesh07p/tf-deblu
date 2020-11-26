@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+net_G_P_S_F.mat
+net_P_P_S_F.mat
