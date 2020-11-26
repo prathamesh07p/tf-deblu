@@ -19,6 +19,7 @@ print(img.shape)
 halfImg=cv2.resize(img,None,fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
 img=img.reshape((1,128,128,3))
 halfImg=halfImg.reshape((1,64,64,3))
+
 with tf.Session() as sess:
     image=tf.placeholder("float",[1,128,128,3])
     halfimg=tf.placeholder("float",[1,64,64,3])
@@ -33,3 +34,4 @@ with tf.Session() as sess:
     out=im2uint8(out)
     out=cv2.cvtColor(out,cv2.COLOR_RGB2BGR)
     cv2.imwrite('eg_deblur.png',out)
+print("Done")
