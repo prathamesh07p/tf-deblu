@@ -35,7 +35,7 @@ def outputImage():
         print("Please run the Deblur process first")
 
 window = Tk()
-window.title('Image Deblurring')
+window.title('Image Deblur')
 window.geometry("500x450")
 window.config(background = "white")
 label_input = Label(window,
