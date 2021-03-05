@@ -66,10 +66,7 @@ button_exit = Button(window,
                      text = "Exit",
                      width = 20,
                      command = exit)
-label_team = Label(window,
-                      text = "Guided by Sonali Sawant Ma'am\nBy TE-B B2 2020 Batch\nFrom TEETB219 to TEETB336 ,TEETB273 and TEETB274",
-                      fg = "black",
-                      bg = "white")
+
 
 label_input.grid(row = 0 ,column = 0 ,sticky = W)
 button_input.grid(row = 0 ,column = 1)
@@ -78,5 +75,4 @@ button_deblur.grid(row = 1 ,column = 1)
 label_output.grid(row = 2 ,column = 0 ,sticky = W)
 button_output.grid(row = 2 ,column = 1)
 button_exit.grid(row = 3 ,column = 1)
-label_team.grid(row = 6 ,column = 0)
 window.mainloop()
