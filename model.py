@@ -4,6 +4,12 @@ from scipy.io import loadmat
 
 class Semantic_face:
     def __init__(self,P_model_path=None,G_model_path=None):
+        """
+        Constructor for initializing the P and G models.
+
+        :param P_model_path: Path to the P model file
+        :param G_model_path: Path to the G model file
+        """
         if P_model_path is not None:
             self.P_mat=loadmat(P_model_path)['net_P']
             print('P_mat load success')
@@ -17,12 +23,34 @@ class Semantic_face:
             print('G_mat load failure ,exit')
             exit()
     def conv_layer(self,bottom,id,name):
+        """
+        Create a convolutional layer with the given filter and bias, and return the result.
+        
+        Parameters:
+            bottom: Input tensor for the convolutional layer.
+            id: Identifier for the filter and bias in the P_mat dictionary.
+            name: Name for the convolutional layer.
+        
+        Returns:
+            conv_bias: The result of the convolutional layer with bias added.
+        """
         filter=tf.constant(self.P_mat[0,id]['w'])
         bias=tf.constant(self.P_mat[0,id]['b'][:,0])
         conv=tf.nn.conv2d(bottom,filter,[1,1,1,1],padding='SAME',name=name)
         conv_bias=tf.nn.bias_add(conv,bias)
         return conv_bias
     def bn_layer(self,bottom,id,name):
+        """
+        Apply batch normalization to the input 'bottom' using the given mean, variance, shift, and scale parameters. 
+
+        Args:
+            bottom: The input tensor to be normalized.
+            id: The identifier for the normalization parameters in self.P_mat.
+            name: The name of the operation.
+
+        Returns:
+            The batch-normalized tensor.
+        """
         mean,var=tf.nn.moments(
             bottom,
             axes=[0,1,2]
@@ -33,11 +61,43 @@ class Semantic_face:
         bn=tf.nn.batch_normalization(bottom,mean,var,shift, scale,epsilon,name=name)
         return bn
     def leaky_relu(self,bottom,alpha,name):
+        """
+        Apply the Leaky ReLU activation function to the input tensor.
+
+        Args:
+            bottom: The input tensor.
+            alpha: The slope of the activation function for negative inputs.
+            name: A name for the operation (optional).
+
+        Returns:
+            A tensor with the same shape as the input tensor after applying the Leaky ReLU activation function.
+        """
         return tf.nn.leaky_relu(bottom,alpha=alpha,name=name)
     def maxpool(self,bottom,name):
+        """
+        Performs max pooling on the input tensor.
+
+        Args:
+            bottom: The input tensor.
+            name: A name for the operation.
+
+        Returns:
+            A tensor after applying max pooling.
+        """
         return tf.nn.max_pool(bottom,ksize=[1,2,2,1],strides=[1,2,2,1],padding='SAME',name=name)
 
     def conv_transpose(self,bottom,id,name):
+        """
+        Performs a 2D transposed convolution operation on the input 'bottom'.
+        
+        Args:
+            bottom: Input tensor.
+            id: Identifier for the operation.
+            name: Name for the operation.
+
+        Returns:
+            The transposed convolution result with bias added.
+        """
         N=bottom.get_shape()[0]
         H=bottom.get_shape()[1]
         W=bottom.get_shape()[2]
@@ -50,6 +110,17 @@ class Semantic_face:
         return conv_t_bias
 
     def conv_bn_relu(self,bottom,id,name):
+        """
+        Creates a convolutional layer, batch normalization layer, and leaky ReLU activation function.
+
+        Args:
+            bottom: Input tensor.
+            id: Identifier for the layer.
+            name: Name prefix for the layers.
+
+        Returns:
+            Tensor: Output of the leaky ReLU activation function.
+        """
         conv = self.conv_layer(bottom, id, name='conv' + name + '_' + str(id))
         bn = self.bn_layer(conv, id, name='bn' + name + '_' + str(id))
         relu = self.leaky_relu(bn, alpha=0.0, name='relu' + name + '_' + str(id))
@@ -57,12 +128,18 @@ class Semantic_face:
 
 
     def conv_bn_relu_pool(self,bottom,id,name):
+        """
+        This function performs a series of operations including convolution, batch normalization, ReLU activation, and max pooling. It takes three parameters: bottom (the input data), id (an identifier), and name (a string for naming layers). It returns the results of the ReLU activation and max pooling operations.
+        """
         relu=self.conv_bn_relu(bottom,id,name)
         pool=self.maxpool(relu,name='maxpool'+name+'_'+str(id))
         return relu,pool
 
 
     def tran_conv_bn_relu(self,bottom,id,down_val,name):
+        """
+        This function takes in four parameters: bottom, id, down_val, and name. It performs a series of operations including convolution transpose, convolution layer, batch normalization, and leaky ReLU activation. It returns the result of the leaky ReLU operation.
+        """
         tran=self.conv_transpose(bottom,id,'conv_transpose'+name+'_'+str(id))
         conv = self.conv_layer(tran, id, name='conv' + name + '_' + str(id))
         bn = self.bn_layer(conv, id, name='bn' + name + '_' + str(id))
@@ -71,11 +148,35 @@ class Semantic_face:
 
 
     def tran_conv_bn_relu_sum(self,bottom,id,down_val,name):
+        """
+        Perform a transformation with convolution, batch normalization, and ReLU activation, and then return the sum of the input 'down_val' and the ReLU output.
+        
+        Parameters:
+            bottom: The input data for the transformation.
+            id: The identifier for the transformation.
+            down_val: The value to be added to the ReLU output.
+            name: The name of the transformation.
+            
+        Returns:
+            The sum of 'down_val' and the ReLU output.
+        """
         relu = self.tran_conv_bn_relu(bottom,id,down_val,name)
         return down_val+relu
 
 
     def convG_layer(self,bottom,id,name):
+        """
+        This function represents a convolutional layer in a neural network.
+        
+        Parameters:
+            self: the instance of the class
+            bottom: the input data for the convolutional layer
+            id: the identifier for the layer
+            name: the name of the convolutional layer
+            
+        Returns:
+            conv_bias: the result of the convolutional layer with bias added
+        """
         filter = tf.constant(self.G_mat[0, id]['w'],dtype=tf.float32)
         bias = tf.constant(self.G_mat[0, id]['b'][:,0],dtype=tf.float32)
         conv = tf.nn.conv2d(bottom, filter, [1, 1, 1, 1], padding='SAME', name=name)
@@ -83,11 +184,28 @@ class Semantic_face:
         return conv_bias
 
     def convG_relu(self,bottom,id,name):
+        """
+        This function performs a convolution followed by a ReLU activation. 
+        It takes in the input 'bottom', an identifier 'id', and a name. 
+        It returns the output of the ReLU activation.
+        """
         convG=self.convG_layer(bottom,id,name='conv'+name+'_'+str(id))
         relu=self.leaky_relu(convG,alpha=0.0,name='relu'+name+'_'+str(id))
         return relu
 
     def convG_transpose(self,bottom,id,name):
+        """
+        Perform transposed convolution using the provided filter and bias.
+        
+        Args:
+            self: The object itself.
+            bottom: The input tensor.
+            id: The ID of the filter to be used.
+            name: The name for the operation.
+            
+        Returns:
+            A tensor resulting from the transposed convolution operation with bias added.
+        """
         N=bottom.get_shape()[0]
         H=bottom.get_shape()[1]
         W=bottom.get_shape()[2]
@@ -101,6 +219,16 @@ class Semantic_face:
 
 
     def ResBlockG(self,bottom,id1,id2,name):
+        """
+        Function to create a Residual Block in a Generative Model. 
+        Parameters:
+            bottom: The input tensor.
+            id1: Identifier for the first convolutional layer.
+            id2: Identifier for the second convolutional layer.
+            name: Name scope for the layers.
+        Returns:
+            The output tensor after the Residual Block processing.
+        """
         conv1=self.convG_relu(bottom,id1,name=name)
         conv2=self.convG_layer(conv1,id2,name=name)
         res=bottom+conv2
@@ -108,6 +236,9 @@ class Semantic_face:
         return relu
 
     def build(self,blur,halfImg):
+        """
+        Face Parsing
+        """
         # Face Parsing
 
         # downsample
